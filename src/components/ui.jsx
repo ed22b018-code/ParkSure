@@ -238,10 +238,10 @@ function PlaceRow({ p, onPick }) {
   );
 }
 
-export function SpotCard({ item, hours, selected, onClick, onHover, compact }) {
+export function SpotCard({ item, hours, selected, onClick, onHover, compact, hint }) {
   const { spot, rate, walk, reason } = item;
   return (
-    <button className={`spot-card ${selected ? 'is-sel' : ''} ${reason ? 'is-off' : ''} ${compact ? 'spot-card--compact' : ''}`} onClick={onClick} onMouseEnter={onHover} data-spot={spot.id}>
+    <button className={`spot-card ${selected ? 'is-sel' : ''} ${reason ? 'is-off' : ''} ${compact ? 'spot-card--compact' : ''} ${hint ? 'is-hint' : ''}`} onClick={onClick} onMouseEnter={onHover} data-spot={spot.id}>
       <SpotArt spot={spot} className="spot-card__art" />
       <div className="spot-card__main">
         <div className="spot-card__title">{SPOT_TYPES[spot.type].label} · {spot.society}</div>

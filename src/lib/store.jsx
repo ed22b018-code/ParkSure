@@ -17,6 +17,7 @@ const initial = () => ({
   deviceId: 'dev-' + uid(),
   vehicle: { type: 'car', size: 'sedan', number: '' },
   vehicleSet: false,
+  phone: '',
   host: { name: '', phone: '' },
   mySpots: [],
   spotEdits: {},
@@ -28,6 +29,11 @@ export function StoreProvider({ children }) {
   const [state, setState] = useState(() => ({ ...initial(), ...(load() || {}) }));
   const [toast, setToast] = useState(null);
   const [now, setNow] = useState(() => new Date());
+  const [story, setStoryState] = useState(() => { try { return sessionStorage.getItem('parksure:story') === '1'; } catch { return false; } });
+  const setStory = useCallback((on) => {
+    setStoryState(on);
+    try { if (on) sessionStorage.setItem('parksure:story', '1'); else sessionStorage.removeItem('parksure:story'); } catch { /* ignore */ }
+  }, []);
 
   useEffect(() => {
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* ignore */ }
@@ -60,6 +66,9 @@ export function StoreProvider({ children }) {
     myBookings: state.bookings.filter((b) => b.guestId === state.deviceId),
     hostId: state.hostView === 'demo' ? 'demo-host' : state.deviceId,
     getSpot: (id) => spots.find((s) => s.id === id),
+    story,
+    setStory,
+    setPhone: (phone) => setState((s) => ({ ...s, phone })),
     setVehicle: (v) => setState((s) => ({ ...s, vehicle: { ...s.vehicle, ...v }, vehicleSet: true })),
     setHost: (h) => setState((s) => ({ ...s, host: { ...s.host, ...h } })),
     setHostView: (v) => setState((s) => ({ ...s, hostView: v })),
@@ -70,10 +79,10 @@ export function StoreProvider({ children }) {
       if (s.mySpots.some((x) => x.id === id)) return { ...s, mySpots: s.mySpots.map((x) => (x.id === id ? { ...x, ...patch } : x)) };
       return { ...s, spotEdits: { ...s.spotEdits, [id]: { ...(s.spotEdits[id] || {}), ...patch } } };
     }),
-    resetDemo: () => { const fresh = initial(); setState(fresh); },
+    resetDemo: () => { const fresh = initial(); setState(fresh); setStory(false); },
     toast,
     showToast,
-  }), [state, now, spots, bookings, toast, showToast]);
+  }), [state, now, spots, bookings, toast, showToast, story, setStory]);
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
 }

@@ -1,6 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { MessageCircle, X, Send, Sparkles } from 'lucide-react';
+import { MessageCircle, X, Send, Sparkles, Play } from 'lucide-react';
+import { useStore } from '../lib/store.jsx';
+import { PLACES } from '../data/places.js';
+import { toQuery, saveLastSearch } from '../lib/search.js';
+import { storyStart } from './StoryBanner.jsx';
 
 const FAQ = [
   // drivers
@@ -56,6 +60,27 @@ export default function HelpBot() {
   const [text, setText] = useState('');
   const bodyRef = useRef(null);
   const hostSide = loc.pathname.startsWith('/host');
+  const { setVehicle, setStory, story } = useStore();
+  const [nudge, setNudge] = useState(false);
+
+  useEffect(() => {
+    let greeted = false;
+    try { greeted = sessionStorage.getItem('parksure:greeted') === '1'; } catch { /* ignore */ }
+    if (greeted || story || loc.pathname.startsWith('/p/')) return undefined;
+    const t = setTimeout(() => { setNudge(true); try { sessionStorage.setItem('parksure:greeted', '1'); } catch { /* ignore */ } }, 1400);
+    return () => clearTimeout(t);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const startDemo = () => {
+    const place = PLACES.find((x) => x.id === 'mithibai');
+    const s = { place, start: storyStart(), hours: 4 };
+    setVehicle({ type: 'car', size: 'suv' });
+    setStory(true);
+    saveLastSearch(s);
+    setNudge(false);
+    setOpen(false);
+    nav(`/search?${toQuery(s)}`);
+  };
 
   useEffect(() => { bodyRef.current?.scrollTo({ top: 99999, behavior: 'smooth' }); }, [msgs, typing, open]);
 
@@ -78,8 +103,19 @@ export default function HelpBot() {
 
   return (
     <>
+      {nudge && !open && (
+        <div className="bot-nudge" role="dialog" aria-label="Quick demo">
+          <button className="bot-nudge__x" onClick={() => setNudge(false)} aria-label="Dismiss"><X size={15} /></button>
+          <div className="bot-nudge__who"><span className="bot__avatar bot__avatar--sm"><Sparkles size={14} /></span><b>Sure</b><small>ParkSure helper</small></div>
+          <p>Hi! 👋 Want to see ParkSure in 30 seconds? Let's book parking for an exam tomorrow at Mithibai College.</p>
+          <div className="bot-nudge__btns">
+            <button className="btn btn--primary btn--sm" onClick={startDemo}><Play size={14} /> Show me</button>
+            <button className="btn btn--ghost btn--sm" onClick={() => setNudge(false)}>I'll explore</button>
+          </div>
+        </div>
+      )}
       {!open && (
-        <button className="bot-fab" onClick={() => setOpen(true)} aria-label="Open help chat">
+        <button className="bot-fab" onClick={() => { setOpen(true); setNudge(false); }} aria-label="Open help chat">
           <MessageCircle size={22} />
           <span className="bot-fab__label">Help</span>
         </button>
@@ -102,6 +138,7 @@ export default function HelpBot() {
             {typing && <div className="bot__msg bot__msg--bot bot__typing"><span /><span /><span /></div>}
           </div>
           <div className="bot__chips">
+            {!hostSide && <button className="chip chip--sm chip--demo" onClick={startDemo}><Play size={13} /> Show me a 30-sec demo</button>}
             {suggestions.map((f) => <button key={f.id} className="chip chip--sm" onClick={() => reply(f.q, f)}>{f.q}</button>)}
           </div>
           <form className="bot__input" onSubmit={send}>

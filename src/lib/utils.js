@@ -168,3 +168,23 @@ export const plateValid = (v) => /^[A-Z]{2}\d{1,2}[A-Z]{0,3}\d{3,4}$/.test(v.tri
 export function mapsLink(spot) {
   return `https://www.google.com/maps/dir/?api=1&destination=${spot.lat.toFixed(6)},${spot.lng.toFixed(6)}`;
 }
+
+export const GRACE_MIN = 10;
+// Overstay is charged at 1.5x the hourly rate, per started 30 minutes
+export const overstayPer30 = (rate) => Math.max(10, Math.round((rate * 0.75) / 5) * 5);
+
+export function maskPhone(p) {
+  const d = (p || '').replace(/\D/g, '').slice(-10);
+  return d.length === 10 ? `+91 ${d.slice(0, 5)} ${d.slice(5)}` : p;
+}
+
+export function encodePass(obj) {
+  const json = JSON.stringify(obj);
+  return btoa(unescape(encodeURIComponent(json))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+export function decodePass(token) {
+  try {
+    const b = token.replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(decodeURIComponent(escape(atob(b + '==='.slice((b.length + 3) % 4)))));
+  } catch { return null; }
+}

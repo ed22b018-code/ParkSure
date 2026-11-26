@@ -13,6 +13,7 @@ import Pass from './pages/Pass.jsx';
 import Bookings from './pages/Bookings.jsx';
 import Host from './pages/Host.jsx';
 import ListSpot from './pages/ListSpot.jsx';
+import SharedPass from './pages/SharedPass.jsx';
 
 const TABS = [
   { to: '/', label: 'Find parking', short: 'Park', icon: Search, end: true },
@@ -65,6 +66,7 @@ export default function App() {
           <Route path="/bookings" element={<Bookings />} />
           <Route path="/host" element={<Host />} />
           <Route path="/host/new" element={<ListSpot />} />
+          <Route path="/p/:token" element={<SharedPass />} />
           <Route path="*" element={<Home />} />
         </Routes>
       </main>

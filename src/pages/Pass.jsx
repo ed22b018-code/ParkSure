@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { ChevronLeft, Navigation, Phone, Copy, ShieldCheck, Plus, X, TriangleAlert, Check, KeyRound, MapPin, PartyPopper } from 'lucide-react';
+import { ChevronLeft, Navigation, Phone, Copy, ShieldCheck, Plus, X, TriangleAlert, Check, KeyRound, MapPin, PartyPopper, Share2, Bell, Timer, Link2 } from 'lucide-react';
 import { useStore } from '../lib/store.jsx';
 import { searchSpots } from '../lib/search.js';
-import { SPOT_TYPES, inr, hrsLabel, fmtDay, fmtTime, endOf, bookingStatus, durationText, mapsLink, unavailableReason, makeCode, uid } from '../lib/utils.js';
+import { SPOT_TYPES, inr, hrsLabel, fmtDay, fmtTime, endOf, bookingStatus, durationText, mapsLink, unavailableReason, makeCode, uid, GRACE_MIN, overstayPer30, encodePass } from '../lib/utils.js';
+import StoryBanner from '../components/StoryBanner.jsx';
 import { ExactMap } from '../components/MapView.jsx';
 import { Sheet, SpotCard } from '../components/ui.jsx';
 
@@ -13,7 +14,7 @@ export default function Pass() {
   const [sp] = useSearchParams();
   const nav = useNavigate();
   const store = useStore();
-  const { bookings, getSpot, updateBooking, addBooking, showToast, now, spots, state } = store;
+  const { bookings, getSpot, updateBooking, addBooking, showToast, now, spots, setStory, story } = store;
   const b = bookings.find((x) => x.id === id);
   const spot = b && getSpot(b.spotId);
   const [sheet, setSheet] = useState(null);
@@ -80,6 +81,14 @@ export default function Pass() {
 
   const copyCode = () => { navigator.clipboard?.writeText(b.code); showToast('Booking code copied'); };
 
+  const token = encodePass({
+    c: b.code, v: b.vehicleNumber, s: b.start, h: totalHrs, n: spot.society, t: SPOT_TYPES[spot.type].label,
+    a: spot.address, la: +spot.lat.toFixed(6), ln: +spot.lng.toFixed(6), i: spot.instructions, hn: spot.hostName.split(' ')[0],
+  });
+  const shareUrl = `${window.location.origin}/p/${token}`;
+  const shareText = `ParkSure gate pass for ${b.vehicleNumber}\n${fmtDay(b.start)}, ${fmtTime(b.start)} – ${fmtTime(end)}\n${spot.society}, ${spot.address}\nShow this pass at the gate: ${shareUrl}`;
+  const remindAt = new Date(new Date(b.start).getTime() - 30 * 60000);
+
   return (
     <div className="page pass">
       <div className="page-bar">
@@ -87,7 +96,7 @@ export default function Pass() {
         <h2>{st === 'cancelled' ? 'Cancelled booking' : st === 'refunded' ? 'Refunded booking' : 'Your gate pass'}</h2>
       </div>
 
-      {isNew && live && (
+      {isNew && live && !story && (
         <div className="success-banner">
           <PartyPopper size={22} />
           <div><b>You're booked!</b><span>Your spot is held for you. Show this pass at the gate.</span></div>
@@ -98,6 +107,13 @@ export default function Pass() {
           <ShieldCheck size={22} />
           <div><b>Rebooked under the ParkSure guarantee</b><span>This spot is on us. Your original payment is being refunded.</span></div>
         </div>
+      )}
+
+      {live && (
+        <StoryBanner step={4} title="Booked! This is your gate pass"
+          action={<button className="btn btn--sm btn--dark mt-8" onClick={() => setStory(false)}>Finish demo</button>}>
+          Share it with whoever is driving, or try “Spot taken?” below to see the guarantee.
+        </StoryBanner>
       )}
 
       <div className="pass__grid">
@@ -128,6 +144,9 @@ export default function Pass() {
           </div>
 
           {live && (
+            <button className="btn btn--wa btn--block btn--lg mt-12" onClick={() => setSheet('share')}><Share2 size={18} /> Share pass on WhatsApp</button>
+          )}
+          {live && (
             <div className="pass-actions">
               <button className="btn btn--ghost" onClick={extend}><Plus size={17} /> Extend 1 hr · {inr(b.rate)}</button>
               {st === 'upcoming' && <button className="btn btn--ghost" onClick={() => setSheet('cancel')}><X size={17} /> Cancel</button>}
@@ -136,6 +155,16 @@ export default function Pass() {
         </div>
 
         <div className="pass__col">
+          {st === 'upcoming' && (
+            <div className="card remind">
+              <span className="remind__ico"><Bell size={18} /></span>
+              <div>
+                <b>{b.reminder === false ? 'Reminder off' : `Reminder ${['Today', 'Tomorrow'].includes(fmtDay(remindAt)) ? fmtDay(remindAt).toLowerCase() : `on ${fmtDay(remindAt)}`} at ${fmtTime(remindAt)}`}</b>
+                <small>{b.reminder === false ? 'Turn it on to get a nudge before you leave.' : '30 min before your slot, with a “leave now” nudge based on traffic.'}</small>
+              </div>
+              <label className="switch"><input type="checkbox" checked={b.reminder !== false} onChange={() => { updateBooking(b.id, { reminder: b.reminder === false }); showToast(b.reminder === false ? 'Reminder on' : 'Reminder off'); }} /><span /></label>
+            </div>
+          )}
           <div className="card">
             <h3 className="card__title"><MapPin size={17} /> {spot.society}</h3>
             <p className="addr">{spot.address}</p>
@@ -150,6 +179,7 @@ export default function Pass() {
             <h3 className="card__title"><KeyRound size={17} /> How to get in</h3>
             <p className="instr">“{spot.instructions}”</p>
             <small className="muted">— {spot.hostName.split(' ')[0]}, your host</small>
+            {live && <p className="note mt-12"><Timer size={15} /> Please leave by {fmtTime(end)}. After {GRACE_MIN} min grace, extra time is {inr(overstayPer30(b.rate))} per 30 min, charged automatically.</p>}
           </div>
 
           {live && (
@@ -176,6 +206,30 @@ export default function Pass() {
           </div>
         </div>
       </div>
+
+      <Sheet open={sheet === 'share'} onClose={() => setSheet(null)} title="Share gate pass">
+        <p className="muted">Whoever opens the link sees the QR, the time, the address and how to get in. No app needed.</p>
+        <div className="share-preview">
+          <b>{b.vehicleNumber}</b>
+          <span>{fmtDay(b.start)}, {fmtTime(b.start)} – {fmtTime(end)} · {spot.society}</span>
+        </div>
+        <div className="share-opts">
+          <a className="share-opt" href={`https://wa.me/?text=${encodeURIComponent(shareText)}`} target="_blank" rel="noreferrer" onClick={() => setSheet(null)}>
+            <span className="share-opt__ico share-opt__ico--wa"><svg viewBox="0 0 24 24" width="22" height="22" fill="#fff" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.3 14.2c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.4-.7-2.8-1.1-4.6-4-4.8-4.2-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.3 0 .5l-.3.5-.4.4c-.1.1-.3.3-.1.6.2.3.7 1.2 1.6 2 1.1 1 2 1.3 2.3 1.4.3.1.4.1.6-.1l.8-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.7-.1 1.3Z"/></svg></span>
+            <span><b>WhatsApp</b><small>Send to family or your driver</small></span>
+          </a>
+          <button className="share-opt" onClick={() => { navigator.clipboard?.writeText(shareUrl); setSheet(null); showToast('Pass link copied'); }}>
+            <span className="share-opt__ico"><Link2 size={20} /></span>
+            <span><b>Copy link</b><small>Paste it anywhere</small></span>
+          </button>
+          {typeof navigator !== 'undefined' && navigator.share && (
+            <button className="share-opt" onClick={() => { navigator.share({ title: 'ParkSure gate pass', text: shareText, url: shareUrl }).catch(() => {}); setSheet(null); }}>
+              <span className="share-opt__ico"><Share2 size={20} /></span>
+              <span><b>More options</b><small>SMS, email and other apps</small></span>
+            </button>
+          )}
+        </div>
+      </Sheet>
 
       <Sheet open={sheet === 'cancel'} onClose={() => setSheet(null)} title="Cancel this booking?"
         footer={<div className="btn-row btn-row--full"><button className="btn btn--ghost" onClick={() => setSheet(null)}>Keep booking</button><button className="btn btn--danger" onClick={cancel}>Cancel & refund</button></div>}>

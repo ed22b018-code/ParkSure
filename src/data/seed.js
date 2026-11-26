@@ -1,4 +1,4 @@
-import { PLACES, AREAS, DEFAULT_BAND, coastLng } from './places.js';
+import { PLACES, AREAS, DEFAULT_BAND, coastLng, distToRiver } from './places.js';
 
 function rng(seed) {
   let a = seed >>> 0;
@@ -63,9 +63,10 @@ export function buildSeedSpots() {
     for (let i = 0; i < count; i++) {
       const angle = r() * Math.PI * 2;
       const dist = i === 0 ? 120 + r() * 180 : i === 1 ? 220 + r() * 300 : 300 + r() * 520; // metres from destination
-      const lat = place.lat + (dist * Math.cos(angle)) / 111111;
+      let lat = place.lat + (dist * Math.cos(angle)) / 111111;
       let lng = place.lng + (dist * Math.sin(angle)) / (111111 * Math.cos((place.lat * Math.PI) / 180));
       if (lng < coastLng(lat) + 0.0014) lng = place.lng + Math.abs(lng - place.lng) + 0.0006; // keep it on land
+      if (distToRiver(lat, lng) < 90) lat += lat > place.lat ? 0.0012 : -0.0012; // not in the river
       const type = weighted(r, TYPES);
       const vx = r();
       const vehicles = i === 0 || vx < 0.62 ? ['car', 'bike'] : vx < 0.88 ? ['car'] : ['bike'];

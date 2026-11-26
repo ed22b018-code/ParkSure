@@ -6,11 +6,12 @@ import { fromQuery, toQuery, searchSpots, saveLastSearch } from '../lib/search.j
 import { fmtDay, fmtTime, endOf, SIZES, sizeWord } from '../lib/utils.js';
 import { ResultsMap } from '../components/MapView.jsx';
 import { SpotCard, PlaceSearch, WhenPicker, VehiclePicker } from '../components/ui.jsx';
+import StoryBanner from '../components/StoryBanner.jsx';
 
 export default function Results() {
   const [sp] = useSearchParams();
   const nav = useNavigate();
-  const { spots, bookings, state, setVehicle } = useStore();
+  const { spots, bookings, state, setVehicle, story } = useStore();
   const { place, start, hours } = fromQuery(sp);
   const v = state.vehicle;
   const [sort, setSort] = useState('near');
@@ -72,6 +73,11 @@ export default function Results() {
 
       <div className="results__layout">
         <aside className={`results__list ${mobileView === 'map' ? 'is-hidden-m' : ''}`} ref={listRef}>
+          {place.id === 'mithibai' && (
+            <StoryBanner step={1} title="Pick a spot near the exam centre">
+              Exam tomorrow, 8 AM. These spots fit your SUV — tap the highlighted one.
+            </StoryBanner>
+          )}
           <div className="filters">
             <div className="seg seg--sm">
               <button className={sort === 'near' ? 'is-on' : ''} onClick={() => setSort('near')}>Nearest</button>
@@ -90,8 +96,8 @@ export default function Results() {
             <p className="note"><Info size={15} /> {notFit} more spot{notFit > 1 ? 's are' : ' is'} nearby but too small for {v.size === 'suv' ? 'an' : 'a'} {sizeWord(v.size)}.</p>
           )}
 
-          {shown.map((item) => (
-            <SpotCard key={item.spot.id} item={item} hours={hours} selected={sel === item.spot.id}
+          {shown.map((item, idx) => (
+            <SpotCard key={item.spot.id} item={item} hours={hours} selected={sel === item.spot.id} hint={story && place.id === 'mithibai' && idx === 0 && !item.reason}
               onHover={() => setSel(item.spot.id)} onClick={() => open(item.spot.id)} />
           ))}
 

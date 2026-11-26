@@ -73,3 +73,19 @@ export function coastLng(lat) {
   return COAST[COAST.length - 1][1];
 }
 
+
+// Mithi river, from Mahim Bay inland past BKC
+export const RIVER = [[19.0405, 72.8335], [19.0445, 72.8405], [19.049, 72.8455], [19.0545, 72.8495], [19.0595, 72.8535], [19.0645, 72.8585], [19.0685, 72.8645], [19.0715, 72.8705], [19.0755, 72.8765], [19.0805, 72.8815]];
+
+export function distToRiver(lat, lng) {
+  const k = Math.cos((19.05 * Math.PI) / 180);
+  let best = Infinity;
+  for (let i = 1; i < RIVER.length; i++) {
+    const [ay, ax] = RIVER[i - 1]; const [by, bx] = RIVER[i];
+    const px = (lng - ax) * k; const py = lat - ay; const vx = (bx - ax) * k; const vy = by - ay;
+    const t = Math.max(0, Math.min(1, (px * vx + py * vy) / (vx * vx + vy * vy)));
+    const dx = px - t * vx; const dy = py - t * vy;
+    best = Math.min(best, Math.sqrt(dx * dx + dy * dy) * 111320);
+  }
+  return best;
+}

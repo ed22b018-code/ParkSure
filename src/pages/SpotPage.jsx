@@ -7,6 +7,7 @@ import { SIZES, SPOT_TYPES, AMENITIES, ACCESS, DAYS_LABEL, fmtHours, fits, rateF
 import SpotArt from '../components/SpotArt.jsx';
 import { ApproxMap } from '../components/MapView.jsx';
 import { WhenPicker, VehiclePicker } from '../components/ui.jsx';
+import StoryBanner from '../components/StoryBanner.jsx';
 
 export default function SpotPage() {
   const { id } = useParams();
@@ -67,6 +68,9 @@ export default function SpotPage() {
 
       <div className="spot-page__grid">
         <div className="spot-page__main">
+          <StoryBanner step={2} title={canBook ? 'Looks good — book it' : 'Pick another time or spot'}>
+            {canBook ? `It fits your ${v.type === 'bike' ? 'bike' : SIZES[v.size].label}, it's ${walk ? `a ${walk} min walk` : 'close by'} and it's free for your slot. Tap Book now.` : 'This spot is taken for your slot. Go back and choose the next one.'}
+          </StoryBanner>
           <span className="eyebrow eyebrow--plain">{SPOT_TYPES[spot.type].label} parking · {spot.area}</span>
           <h1 className="spot-page__title">{spot.society}</h1>
           <div className="spot-page__meta">

@@ -14,7 +14,7 @@ export function ResultsMap({ destination, items, selectedId, onSelect, className
       node: <div className={`price-pin${spot.id === selectedId ? ' is-sel' : ''}${reason ? ' is-muted' : ''}`}>{reason ? 'Full' : `₹${rate}`}</div>,
     })),
   ];
-  return <CityMap className={`map ${className}`} center={destination} fit={fit} markers={markers} focus={selected ? selected.spot : null} />;
+  return <CityMap className={`map ${className}`} center={destination} fit={fit} markers={markers} focus={selected ? selected.spot : null} hidePlace={destination.id} />;
 }
 
 // Approximate location only — exact spot is revealed after booking
