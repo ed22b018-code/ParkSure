@@ -56,3 +56,20 @@ export function nearestPlace(lat, lng) {
 }
 
 export const MUMBAI_CENTER = { lat: 19.07, lng: 72.845 };
+
+// Approximate west coastline of Mumbai (lat, lng) — used by the map and to keep spots on land
+const COAST = [
+  [18.96, 72.81], [18.98, 72.812], [19.0, 72.814], [19.012, 72.822], [19.022, 72.83], [19.03, 72.834],
+  [19.038, 72.836], [19.044, 72.829], [19.046, 72.819], [19.058, 72.82], [19.07, 72.823], [19.085, 72.824],
+  [19.1, 72.824], [19.115, 72.823], [19.13, 72.814], [19.15, 72.808], [19.2, 72.804],
+];
+export function coastLng(lat) {
+  if (lat <= COAST[0][0]) return COAST[0][1];
+  for (let i = 1; i < COAST.length; i++) {
+    const [a, la] = COAST[i - 1];
+    const [b, lb] = COAST[i];
+    if (lat <= b) return la + ((lat - a) / (b - a)) * (lb - la);
+  }
+  return COAST[COAST.length - 1][1];
+}
+

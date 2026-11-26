@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
-import { Routes, Route, NavLink, Link, useLocation } from 'react-router-dom';
-import { Search, Ticket, House } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Routes, Route, NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Search, Ticket, House, RotateCcw } from 'lucide-react';
 import { useStore } from './lib/store.jsx';
-import { Logo, Toast } from './components/ui.jsx';
+import { Logo, Toast, Sheet } from './components/ui.jsx';
+import HelpBot from './components/HelpBot.jsx';
 import { bookingStatus } from './lib/utils.js';
 import Home from './pages/Home.jsx';
 import Results from './pages/Results.jsx';
@@ -20,14 +21,25 @@ const TABS = [
 ];
 
 export default function App() {
-  const { toast, myBookings, now } = useStore();
+  const { toast, myBookings, now, resetDemo, showToast } = useStore();
   const loc = useLocation();
+  const nav = useNavigate();
+  const [confirmReset, setConfirmReset] = useState(false);
+  const doReset = () => {
+    resetDemo();
+    try { sessionStorage.clear(); } catch { /* ignore */ }
+    setConfirmReset(false);
+    nav('/');
+    showToast('Demo reset · fresh start');
+  };
+  const p = loc.pathname;
+  const dock = ['/', '/bookings', '/host'].includes(p) ? 'tabs' : (p.startsWith('/spot/') || p.startsWith('/checkout/') || p === '/host/new') ? 'cta' : p === '/search' ? 'map' : 'none';
   useEffect(() => { window.scrollTo(0, 0); }, [loc.pathname]);
   const topLevel = ['/', '/bookings', '/host'].includes(loc.pathname);
   const live = myBookings.filter((b) => ['upcoming', 'active'].includes(bookingStatus(b, now))).length;
 
   return (
-    <div className={`app ${topLevel ? 'has-tabs' : ''}`}>
+    <div className={`app ${topLevel ? 'has-tabs' : ''} dock-${dock}`}>
       <header className="topnav">
         <div className="topnav__inner">
           <Link to="/" aria-label="ParkSure home"><Logo /></Link>
@@ -39,6 +51,7 @@ export default function App() {
             ))}
           </nav>
           <span className="city-pill" title="Bengaluru coming soon">Mumbai</span>
+          <button className="reset-btn" onClick={() => setConfirmReset(true)} title="Reset demo data on this device"><RotateCcw size={15} /><span>Reset</span></button>
         </div>
       </header>
 
@@ -66,7 +79,12 @@ export default function App() {
           ))}
         </nav>
       )}
+      <HelpBot key={loc.pathname.startsWith('/host') ? 'host' : 'driver'} />
       <Toast toast={toast} />
+      <Sheet open={confirmReset} onClose={() => setConfirmReset(false)} title="Reset the demo?"
+        footer={<div className="btn-row btn-row--full"><button className="btn btn--ghost" onClick={() => setConfirmReset(false)}>Keep my data</button><button className="btn btn--primary" onClick={doReset}><RotateCcw size={16} /> Reset</button></div>}>
+        <p className="muted">This clears your bookings, the spots you listed and your saved vehicle on this device, so the next person sees a fresh app. Sample spots and the sample host dashboard stay.</p>
+      </Sheet>
     </div>
   );
 }

@@ -15,12 +15,10 @@
   },
   "homepage": "https://github.com/ed22b018-code/parksure#readme",
   "dependencies": {
-    "leaflet": "1.9",
     "lucide-react": "^1.80.0",
     "qrcode.react": "^4.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-leaflet": "^4.2.1",
     "react-router-dom": "^6.30.6"
   },
   "devDependencies": {
